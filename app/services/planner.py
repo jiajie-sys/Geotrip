@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 from dotenv import load_dotenv
 from openai import OpenAI, APIError
@@ -7,9 +8,14 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.schemas import TripRequest, TripPlan
+from app.prompts import build_trip_prompt
+from app.database import save_trip
+from app.rag.retriever import retrieve_context
 
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 client = OpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
@@ -20,91 +26,109 @@ client = OpenAI(
 def create_trip_plan(request: TripRequest):
     feedback = ""
 
+    query = f"""
+    {request.travel_month}月份去{request.destination}旅行，
+    交通方式是{request.transport}，
+    兴趣包括{", ".join(request.interests)}，
+    预算是{request.budget}元。
+    """
+
+    context = retrieve_context(
+        query=query,
+        top_k=2
+    )
+
+    logger.info("RAG query: %s", query)
+    logger.info("RAG context: %s", context)
+
     for attempt in range(2):
-        prompt = f"""
-你是 GeoTrip 的旅行规划助手。
-
-请根据以下信息生成旅行计划：
-
-目的地：{request.destination}
-旅行天数：{request.days}
-预算：{request.budget} 元
-交通方式：{request.transport}
-兴趣：{", ".join(request.interests)}
-旅行月份：{request.travel_month}
-
-{feedback}
-
-请严格按照 JSON 格式返回，不要输出 JSON 以外的任何文字。
-所有文本内容使用中文。
-必须严格生成 {request.days} 天行程，不得多于或少于该天数。
-
-格式如下：
-
-{{
-    "destination": "{request.destination}",
-    "days": [
-        {{
-            "day": 1,
-            "title": "当天行程标题",
-            "activities": [
-                "活动1",
-                "活动2"
-            ]
-        }}
-    ]
-}}
-"""
+        prompt = build_trip_prompt(
+            request=request,
+            context=context,
+            feedback=feedback
+        )
 
         try:
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
                     {
-                        "role": "system",
-                        "content": "You are GeoTrip, an AI travel planning assistant."
-                    },
-                    {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                response_format={"type": "json_object"}
+                temperature=0.7
             )
 
-            plan_text = response.choices[0].message.content
-            plan_data = json.loads(plan_text)
+            raw_content = response.choices[0].message.content
 
-            plan = TripPlan.model_validate(plan_data)
-
-            if len(plan.days) == request.days:
-                return plan
-
-            feedback = (
-                f"你上一次生成了 {len(plan.days)} 天行程，"
-                f"但用户要求 {request.days} 天。"
-                f"请重新生成，并严格生成 {request.days} 天。"
+            logger.info(
+                "LLM response attempt %s: %s",
+                attempt + 1,
+                raw_content
             )
 
-        except APIError:
+            data = json.loads(raw_content)
+
+            plan = TripPlan.model_validate(data)
+
+            if len(plan.days) != request.days:
+                feedback = f"""
+上一次生成的行程天数不正确。
+用户要求 {request.days} 天，
+但你生成了 {len(plan.days)} 天。
+
+请重新生成，并严格返回 {request.days} 天。
+"""
+                continue
+
+            trip_id = save_trip(
+                request=request,
+                plan=plan
+            )
+
+            return {
+                "trip_id": trip_id,
+                "plan": plan
+            }
+
+        except APIError as error:
+            logger.exception("DeepSeek API error")
+
             raise HTTPException(
                 status_code=502,
-                detail="DeepSeek API request failed"
+                detail=f"DeepSeek API 调用失败: {str(error)}"
             )
 
         except json.JSONDecodeError:
-            feedback = (
-                "你上一次返回的内容不是合法 JSON。"
-                "请重新生成，并且只返回合法 JSON。"
+            logger.warning(
+                "LLM returned invalid JSON on attempt %s",
+                attempt + 1
             )
 
-        except ValidationError:
-            feedback = (
-                "你上一次返回的 JSON 结构不符合要求。"
-                "请严格按照指定的 destination 和 days 结构重新生成。"
+            feedback = """
+上一次输出不是合法 JSON。
+请重新生成。
+不要使用 Markdown 代码块。
+不要输出任何解释，只返回合法 JSON。
+"""
+
+        except ValidationError as error:
+            logger.warning(
+                "TripPlan validation failed on attempt %s: %s",
+                attempt + 1,
+                error
             )
+
+            feedback = """
+上一次返回的数据结构不符合要求。
+
+请严格按照指定 JSON 格式重新生成。
+必须包含 destination 和 days。
+days 中每一项必须包含 day、title 和 activities。
+"""
 
     raise HTTPException(
         status_code=502,
-        detail="AI failed to generate a valid trip plan after retry"
+        detail="AI 连续两次生成了无效的旅行计划"
     )

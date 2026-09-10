@@ -20,3 +20,7 @@ class DayPlan(BaseModel):
 class TripPlan(BaseModel):
     destination: str
     days: List[DayPlan]
+
+
+class BudgetUpdate(BaseModel):
+    budget: float = Field(gt=0)
