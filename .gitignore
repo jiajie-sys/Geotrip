@@ -3,3 +3,23 @@
 __pycache__/
 *.pyc
 data/geotrip.db
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Environment variables
+.env
+
+# Database
+data/geotrip.db
+
+# Jupyter
+.ipynb_checkpoints/
+Untitled.ipynb
+
+# FAISS generated files
+data/faiss.index
+data/faiss_chunks.json
