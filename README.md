@@ -320,7 +320,31 @@ Evaluate
    ↓
 Replan
 ```
+## 🖼️ Demo
 
+### AI Travel Planning
+
+GeoTrip combines user preferences, travel knowledge, structured destination data and weather information to generate a personalized travel plan.
+
+![GeoTrip V1 Travel Plan](docs/images/geotrip-v1.png)
+
+### Weather Risk Simulation
+
+The original plan incorporates real weather information. A dedicated demo mode can simulate sudden extreme weather conditions to demonstrate GeoTrip's weather-risk evaluation pipeline.
+
+![GeoTrip Weather Risk Demo](docs/images/geotrip-weather-demo.png)
+
+### Weather-Aware Dynamic Replanning
+
+When the weather-risk score reaches the replanning threshold, GeoTrip generates a new itinerary adapted to the changed conditions.
+
+![GeoTrip V2 Replanning](docs/images/geotrip-v2.png)
+
+### Trip Version Comparison
+
+GeoTrip stores multiple itinerary versions and compares the original and replanned trips, highlighting removed, added and changed activities.
+
+![GeoTrip Version Comparison](docs/images/geotrip-version-compare.png)
 ---
 
 ## 🛠 Tech Stack

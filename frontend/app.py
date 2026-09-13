@@ -9,6 +9,7 @@ API_BASE_URL = os.getenv(
     "http://127.0.0.1:8000/api/v1"
 )
 
+
 st.set_page_config(
     page_title="GeoTrip",
     page_icon="🌍",
@@ -374,49 +375,66 @@ else:
     st.divider()
 
     st.header(
-        "🌦️ 天气变化与动态重规划"
+        "🌦️ 天气风险与动态重规划"
     )
 
     st.caption(
-        "这里暂时使用手动天气参数模拟天气变化，"
-        "用于验证 GeoTrip 的动态重规划能力。"
+        "GeoTrip 在生成 V1 行程时已结合目的地、"
+        "出发日期与天气信息进行规划。"
+        "当旅行期间天气发生明显变化时，"
+        "系统可以重新评估风险并生成新的旅行方案。"
     )
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        precipitation_probability = st.slider(
-            "🌧️ 降水概率 (%)",
-            min_value=0,
-            max_value=100,
-            value=90
-        )
-
-        temperature_min = st.number_input(
-            "🥶 最低温度 (°C)",
-            value=-2.0,
-            step=1.0
-        )
-
-    with col2:
-        wind_speed_max = st.number_input(
-            "💨 最大风速 (km/h)",
-            min_value=0.0,
-            value=65.0,
-            step=5.0
-        )
-
-        temperature_max = st.number_input(
-            "🌡️ 最高温度 (°C)",
-            value=5.0,
-            step=1.0
-        )
-
-    replan_button = st.button(
-        "🔄 根据天气重新规划",
-        type="primary",
-        use_container_width=True
+    st.info(
+        f"📍 {destination} · "
+        f"{start_date.strftime('%Y/%m/%d')}  "
+        "当前 V1 已结合天气信息生成。"
     )
+
+    with st.expander(
+        "🧪 Demo · 模拟极端天气变化",
+        expanded=False
+    ):
+        st.caption(
+            "用于模拟旅行计划生成后天气突然恶化的情况，"
+            "验证 GeoTrip 的天气风险评估与动态重规划能力。"
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            precipitation_probability = st.slider(
+                "🌧️ 降水概率 (%)",
+                min_value=0,
+                max_value=100,
+                value=90
+            )
+
+            temperature_min = st.number_input(
+                "🥶 最低温度 (°C)",
+                value=-2.0,
+                step=1.0
+            )
+
+        with col2:
+            wind_speed_max = st.number_input(
+                "💨 最大风速 (km/h)",
+                min_value=0.0,
+                value=65.0,
+                step=5.0
+            )
+
+            temperature_max = st.number_input(
+                "🌡️ 最高温度 (°C)",
+                value=5.0,
+                step=1.0
+            )
+
+        replan_button = st.button(
+            "⚠️ 模拟天气突变并重新规划",
+            type="primary",
+            use_container_width=True
+        )
 
     if replan_button:
         try:
