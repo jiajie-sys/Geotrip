@@ -14,7 +14,9 @@ def main():
         chunks=chunks
     )
 
-    print(f"索引构建完成，共写入 {index.ntotal} 个向量。")
+    print(
+        f"索引构建完成，共写入 {index.ntotal} 个向量。"
+    )
 
 
 if __name__ == "__main__":

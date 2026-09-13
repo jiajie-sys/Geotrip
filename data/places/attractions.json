@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Blue Lagoon",
+    "country": "Iceland",
+    "city": "Reykjavik",
+    "type": "hot spring",
+    "tags": [
+      "relax",
+      "nature"
+    ],
+    "recommended_days": 1
+  },
+  {
+    "name": "Golden Circle",
+    "country": "Iceland",
+    "city": "Reykjavik",
+    "type": "road trip",
+    "tags": [
+      "waterfall",
+      "geothermal",
+      "nature"
+    ],
+    "recommended_days": 1
+  },
+  {
+    "name": "Fushimi Inari Shrine",
+    "country": "Japan",
+    "city": "Kyoto",
+    "type": "culture",
+    "tags": [
+      "history",
+      "photography"
+    ],
+    "recommended_days": 1
+  },
+  {
+    "name": "Tromso Northern Lights",
+    "country": "Norway",
+    "city": "Tromso",
+    "type": "nature",
+    "tags": [
+      "aurora",
+      "winter"
+    ],
+    "recommended_days": 2
+  }
+]

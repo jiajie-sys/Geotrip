@@ -1,15 +1,18 @@
 from pathlib import Path
 
-
-KNOWLEDGE_PATH = Path("data/knowledge/iceland.md")
+KNOWLEDGE_DIR = Path("data/knowledge")
 
 
 def load_knowledge():
-    content = KNOWLEDGE_PATH.read_text(
-        encoding="utf-8"
-    )
+    contents = []
 
-    return content
+    for file_path in sorted(KNOWLEDGE_DIR.glob("*.md")):
+        content = file_path.read_text(encoding="utf-8")
+        contents.append(content)
+
+    return "\n\n".join(contents)
+
+
 def split_knowledge(content: str):
     chunks = content.split("\n\n")
 
@@ -36,6 +39,7 @@ def split_by_size(
 
     return chunks
 
+
 def split_markdown_sections(content: str):
     sections = []
     current_section = []
@@ -54,4 +58,8 @@ def split_markdown_sections(content: str):
     if current_section:
         sections.append("\n".join(current_section).strip())
 
-    return [section for section in sections if section]
+    return [
+        section
+        for section in sections
+        if section
+    ]

@@ -15,7 +15,7 @@ from app.tools.weather import (
     get_city_weather,
     should_use_weather_tool
 )
-
+from app.tools.places import search_places
 
 load_dotenv()
 
@@ -36,7 +36,68 @@ def build_rag_query(request: TripRequest):
     兴趣包括{", ".join(request.interests)}，
     预算是{request.budget}元。
     """
+def get_places_context(request: TripRequest):
+    try:
+        places = search_places(
+            destination=request.destination
+        )
 
+        if not places:
+            logger.info(
+                "No structured places found for: %s",
+                request.destination
+            )
+            return ""
+
+        logger.info(
+            "Places found: %s",
+            places
+        )
+
+        return json.dumps(
+            places,
+            ensure_ascii=False,
+            indent=2
+        )
+
+    except Exception as error:
+        logger.warning(
+            "Places search failed: %s",
+            error
+        )
+        return ""
+    
+def get_places_context(request: TripRequest):
+    try:
+        places = search_places(
+            country=request.destination
+        )
+
+        if not places:
+            logger.info(
+                "No structured places found for destination: %s",
+                request.destination
+            )
+            return ""
+
+        logger.info(
+            "Places result: %s",
+            places
+        )
+
+        return json.dumps(
+            places,
+            ensure_ascii=False,
+            indent=2
+        )
+
+    except Exception as error:
+        logger.warning(
+            "Places tool failed: %s",
+            error
+        )
+
+        return ""
 
 def get_weather_context(request: TripRequest):
     if not should_use_weather_tool(
@@ -106,6 +167,14 @@ def create_trip_plan(
         "RAG context: %s",
         context
     )
+    places_context = get_places_context(
+    request
+)
+
+    logger.info(
+    "Places context: %s",
+    places_context
+    )
 
     weather_context = (
         get_weather_context(
@@ -120,11 +189,12 @@ def create_trip_plan(
 
     for attempt in range(2):
         prompt = build_trip_prompt(
-            request=request,
-            context=context,
-            weather_context=weather_context,
-            feedback=feedback
-        )
+        request=request,
+        context=context,
+        weather_context=weather_context,
+        places_context=places_context,
+        feedback=feedback
+       )
 
         try:
             response = (
